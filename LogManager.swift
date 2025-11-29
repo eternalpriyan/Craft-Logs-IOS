@@ -6,68 +6,86 @@ import Combine
 class LogManager: ObservableObject {
     @Published var recentLogs: [LogEntry] = []
     @Published var pendingCount: Int = 0
-    
+
     private let api: LogDestination
     private let queue: LogQueue
-    private let userDefaults = UserDefaults(suiteName: "group.com.priyan.craftlog")!
-    private let recentLogsKey = "recentLogs"
+    private let userDefaults: UserDefaults
     private var syncTimer: Timer?
-    
+
     init(api: LogDestination = CraftDailyNotesAPI()) {
         self.api = api
         self.queue = LogQueue()
-        
+
+        // Safe initialization of UserDefaults
+        guard let defaults = UserDefaults(suiteName: Configuration.appGroupIdentifier) else {
+            fatalError("Failed to initialize UserDefaults with app group identifier: \(Configuration.appGroupIdentifier). Ensure the app group is properly configured in your Xcode project.")
+        }
+        self.userDefaults = defaults
+
         loadRecentLogs()
-        updatePendingCount()
+
+        Task {
+            await updatePendingCount()
+        }
+
         startSyncTimer()
     }
     
     func addLog(_ text: String) async throws {
         let entry = LogEntry(text: text)
-        
+
         // Try to send immediately
         do {
             try await api.appendLog(entry)
-            
+
             // Success - add to recent logs
             var synced = entry
             synced.isSynced = true
             addToRecentLogs(synced)
-            
+
             // Try to sync any pending logs
             await syncPendingLogs()
         } catch {
             // Failed - queue for later
-            queue.enqueue(entry)
-            updatePendingCount()
+            await queue.enqueue(entry)
+            await updatePendingCount()
             throw LogError.offline
         }
     }
     
     private func addToRecentLogs(_ entry: LogEntry) {
         recentLogs.insert(entry, at: 0)
-        if recentLogs.count > 20 {
-            recentLogs = Array(recentLogs.prefix(20))
+        if recentLogs.count > Configuration.maxRecentLogs {
+            recentLogs = Array(recentLogs.prefix(Configuration.maxRecentLogs))
         }
         saveRecentLogs()
     }
     
     private func loadRecentLogs() {
-        guard let data = userDefaults.data(forKey: recentLogsKey) else { return }
-        recentLogs = (try? JSONDecoder().decode([LogEntry].self, from: data)) ?? []
+        guard let data = userDefaults.data(forKey: Configuration.Keys.recentLogs) else { return }
+        do {
+            recentLogs = try JSONDecoder().decode([LogEntry].self, from: data)
+        } catch {
+            print("⚠️ Failed to decode recent logs: \(error.localizedDescription)")
+            recentLogs = []
+        }
     }
     
     private func saveRecentLogs() {
-        let data = try? JSONEncoder().encode(recentLogs)
-        userDefaults.set(data, forKey: recentLogsKey)
+        do {
+            let data = try JSONEncoder().encode(recentLogs)
+            userDefaults.set(data, forKey: Configuration.Keys.recentLogs)
+        } catch {
+            print("⚠️ Failed to encode recent logs: \(error.localizedDescription)")
+        }
     }
     
-    private func updatePendingCount() {
-        pendingCount = queue.count
+    private func updatePendingCount() async {
+        pendingCount = await queue.count
     }
     
     private func startSyncTimer() {
-        syncTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+        syncTimer = Timer.scheduledTimer(withTimeInterval: Configuration.syncTimerInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.syncPendingLogs()
             }
@@ -75,9 +93,9 @@ class LogManager: ObservableObject {
     }
     
     func syncPendingLogs() async {
-        while !queue.isEmpty {
-            guard let entry = queue.dequeue() else { break }
-            
+        while await !queue.isEmpty {
+            guard let entry = await queue.dequeue() else { break }
+
             do {
                 try await api.appendLog(entry)
                 var synced = entry
@@ -85,11 +103,11 @@ class LogManager: ObservableObject {
                 addToRecentLogs(synced)
             } catch {
                 // Failed - put it back
-                queue.enqueue(entry)
+                await queue.enqueue(entry)
                 break
             }
         }
-        updatePendingCount()
+        await updatePendingCount()
     }
     
     deinit {

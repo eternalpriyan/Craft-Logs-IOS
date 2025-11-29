@@ -16,8 +16,12 @@ struct LogWidgetEntry: TimelineEntry {
 }
 
 struct LogWidgetProvider: TimelineProvider {
-    private let userDefaults = UserDefaults(suiteName: "group.com.priyan.craftlog")!
-    
+    private let userDefaults: UserDefaults?
+
+    init() {
+        self.userDefaults = UserDefaults(suiteName: Configuration.appGroupIdentifier)
+    }
+
     func placeholder(in context: Context) -> LogWidgetEntry {
         LogWidgetEntry(
             date: Date(),
@@ -25,7 +29,7 @@ struct LogWidgetProvider: TimelineProvider {
             pendingCount: 0
         )
     }
-    
+
     func getSnapshot(in context: Context, completion: @escaping (LogWidgetEntry) -> Void) {
         let entry = LogWidgetEntry(
             date: Date(),
@@ -34,28 +38,51 @@ struct LogWidgetProvider: TimelineProvider {
         )
         completion(entry)
     }
-    
+
     func getTimeline(in context: Context, completion: @escaping (Timeline<LogWidgetEntry>) -> Void) {
         let entry = LogWidgetEntry(
             date: Date(),
             recentLogs: getRecentLogs(),
             pendingCount: getPendingCount()
         )
-        
-        // Update every 15 minutes
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
+
+        // Update every configured interval
+        let nextUpdate = Calendar.current.date(
+            byAdding: .minute,
+            value: Configuration.widgetRefreshInterval,
+            to: Date()
+        ) ?? Date().addingTimeInterval(900) // Fallback to 15 minutes
+
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
-    
+
     private func getRecentLogs() -> [LogEntry] {
-        guard let data = userDefaults.data(forKey: "recentLogs") else { return [] }
-        return (try? JSONDecoder().decode([LogEntry].self, from: data)) ?? []
+        guard let userDefaults = userDefaults,
+              let data = userDefaults.data(forKey: Configuration.Keys.recentLogs) else {
+            return []
+        }
+
+        do {
+            return try JSONDecoder().decode([LogEntry].self, from: data)
+        } catch {
+            print("⚠️ Widget failed to decode recent logs: \(error.localizedDescription)")
+            return []
+        }
     }
-    
+
     private func getPendingCount() -> Int {
-        guard let data = userDefaults.data(forKey: "pendingLogs") else { return 0 }
-        let logs = (try? JSONDecoder().decode([LogEntry].self, from: data)) ?? []
-        return logs.count
+        guard let userDefaults = userDefaults,
+              let data = userDefaults.data(forKey: Configuration.Keys.pendingLogs) else {
+            return 0
+        }
+
+        do {
+            let logs = try JSONDecoder().decode([LogEntry].self, from: data)
+            return logs.count
+        } catch {
+            print("⚠️ Widget failed to decode pending logs: \(error.localizedDescription)")
+            return 0
+        }
     }
 }
