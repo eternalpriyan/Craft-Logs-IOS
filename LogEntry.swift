@@ -18,7 +18,7 @@ struct LogEntry: Identifiable, Codable {
     static func currentTimestamp() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        formatter.timeZone = TimeZone(identifier: "Asia/Singapore")
+        formatter.timeZone = TimeZone(identifier: Configuration.defaultTimezone)
         return formatter.string(from: Date())
     }
     

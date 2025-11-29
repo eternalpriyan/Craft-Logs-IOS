@@ -95,10 +95,22 @@ struct ContentView: View {
     
     private func submitLog() {
         guard !logText.isEmpty else { return }
-        
+
+        // Validate input length
+        let trimmedText = logText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else {
+            showToastMessage("Please enter some text")
+            return
+        }
+
+        guard trimmedText.count <= Configuration.maxLogLength else {
+            showToastMessage("Log too long (max \(Configuration.maxLogLength) characters)")
+            return
+        }
+
         Task {
             do {
-                try await logManager.addLog(logText)
+                try await logManager.addLog(trimmedText)
                 await MainActor.run {
                     logText = ""
                     showToastMessage("Logged ✓")
@@ -109,9 +121,13 @@ struct ContentView: View {
                         switch logError {
                         case .offline:
                             showToastMessage("Queued for sync")
-                        case .failed:
-                            showToastMessage("Failed - tap to retry")
+                        case .failed(let message):
+                            print("⚠️ Log failed: \(message)")
+                            showToastMessage("Failed - will retry")
                         }
+                    } else {
+                        print("⚠️ Unexpected error: \(error.localizedDescription)")
+                        showToastMessage("Error occurred")
                     }
                 }
             }
@@ -121,9 +137,12 @@ struct ContentView: View {
     private func showToastMessage(_ message: String) {
         toastMessage = message
         showToast = true
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            showToast = false
+
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+            await MainActor.run {
+                showToast = false
+            }
         }
     }
 }
