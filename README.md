@@ -48,18 +48,38 @@ class ObsidianAPI: LogDestination { ... }
 CraftLog/
 ├── CraftLogApp.swift           # Main app entry point
 ├── ContentView.swift            # Main UI with input field
+├── Configuration.swift          # Centralized configuration constants
 ├── Info.plist                   # App configuration
+├── Package.swift                # Swift Package Manager manifest
 ├── Models/
-│   └── LogEntry.swift          # Log entry model
+│   └── LogEntry.swift          # Log entry model & LogError enum
 ├── Core/
 │   ├── CraftAPI.swift          # Craft API client (protocol-based)
-│   ├── LogQueue.swift          # Offline queue manager
-│   └── LogManager.swift        # Coordinating logic
+│   ├── LogQueue.swift          # Thread-safe offline queue (actor)
+│   └── LogManager.swift        # Coordinating logic (@MainActor)
 └── Widgets/
-    ├── CraftLogWidgets.swift   # Widget bundle
+    ├── CraftLogWidgets.swift   # Widget bundle & provider
     ├── SmallWidget.swift       # Quick log button widget
     └── MediumWidget.swift      # Recent logs widget
 ```
+
+## Code Quality & Best Practices
+
+### Thread Safety
+- ✅ **LogQueue** uses Swift's `actor` pattern for automatic synchronization
+- ✅ **LogManager** marked with `@MainActor` for UI thread safety
+- ✅ All async operations use modern Swift Concurrency (async/await)
+
+### Error Handling
+- ✅ **No force unwraps** - all potential failures handled gracefully
+- ✅ **Comprehensive error logging** with descriptive messages
+- ✅ **Input validation** - length limits and whitespace trimming
+- ✅ **Graceful degradation** - widgets show placeholders on errors
+
+### Configuration Management
+- ✅ **Centralized Configuration** - all constants in `Configuration.swift`
+- ✅ **Easy customization** - change API URLs, timeouts, limits in one place
+- ✅ **Type-safe** - enums for keys and static constants
 
 ## Setup
 
@@ -78,8 +98,13 @@ CraftLog/
    - Add to both main app and widget extension
 
 4. **Configure Craft API**
-   - The API endpoint is already set to: `https://connect.craft.do/links/4LRilONEs5e/api/v1`
-   - To change: Edit `CraftAPI.swift` and update `baseURL`
+   - The API endpoint is set in `Configuration.swift`: `https://connect.craft.do/links/4LRilONEs5e/api/v1`
+   - To change: Edit `Configuration.defaultCraftAPIURL` in `Configuration.swift`
+   - Other customizable settings in `Configuration.swift`:
+     - `maxLogLength` - Maximum characters per log (default: 10,000)
+     - `widgetRefreshInterval` - Widget update frequency (default: 15 minutes)
+     - `syncTimerInterval` - Background sync interval (default: 60 seconds)
+     - `defaultTimezone` - Timestamp timezone (default: "Asia/Singapore")
 
 5. **Build and Run**
    - Select target device/simulator

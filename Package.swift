@@ -19,14 +19,14 @@ let package = Package(
             sources: [
                 "CraftLogApp.swift",
                 "ContentView.swift",
-                "LogEntry.swift",
-                "CraftAPI.swift",
-                "LogQueue.swift",
-                "LogManager.swift",
                 "Configuration.swift",
-                "CraftLogWidgets.swift",
-                "SmallWidget.swift",
-                "MediumWidget.swift"
+                "Models/LogEntry.swift",
+                "Core/CraftAPI.swift",
+                "Core/LogQueue.swift",
+                "Core/LogManager.swift",
+                "Widgets/CraftLogWidgets.swift",
+                "Widgets/SmallWidget.swift",
+                "Widgets/MediumWidget.swift"
             ]
         )
     ]

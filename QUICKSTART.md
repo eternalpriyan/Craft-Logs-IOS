@@ -29,20 +29,22 @@ All code for **Phase 1** is ready. Here's what's included:
 
 ```
 CraftLog/
-├── README.md              # Full documentation
-├── SETUP.md              # Detailed Xcode setup steps
-├── QUICKSTART.md         # This file
-├── CraftLogApp.swift     # App entry point
-├── ContentView.swift     # Main UI
-├── Info.plist           # App configuration
+├── README.md               # Full documentation
+├── SETUP.md               # Detailed Xcode setup steps
+├── QUICKSTART.md          # This file
+├── CraftLogApp.swift      # App entry point
+├── ContentView.swift      # Main UI
+├── Configuration.swift    # Centralized config (NEW!)
+├── Info.plist            # App configuration
+├── Package.swift         # Swift Package Manager manifest
 ├── Models/
-│   └── LogEntry.swift   # Log data model
+│   └── LogEntry.swift    # Log data model & LogError enum
 ├── Core/
-│   ├── CraftAPI.swift   # API client (extensible!)
-│   ├── LogQueue.swift   # Offline queue
-│   └── LogManager.swift # Business logic
+│   ├── CraftAPI.swift    # API client (extensible, no force unwraps!)
+│   ├── LogQueue.swift    # Thread-safe offline queue (actor!)
+│   └── LogManager.swift  # Business logic (@MainActor)
 └── Widgets/
-    ├── CraftLogWidgets.swift  # Widget bundle
+    ├── CraftLogWidgets.swift  # Widget bundle & provider
     ├── SmallWidget.swift      # Quick log widget
     └── MediumWidget.swift     # Recent logs widget
 ```
@@ -72,8 +74,9 @@ CraftLog/
    - Repeat for `CraftLogWidgets` target (same group!)
 
 6. **Set file targets:**
-   - Select `LogEntry.swift` → File Inspector → Check BOTH targets
-   - Select `LogQueue.swift` → File Inspector → Check BOTH targets
+   - Select `Configuration.swift` → File Inspector → Check BOTH targets
+   - Select `Models/LogEntry.swift` → File Inspector → Check BOTH targets
+   - Select `Core/LogQueue.swift` → File Inspector → Check BOTH targets
 
 7. **Build & Run** (Cmd+R)
 
@@ -93,10 +96,16 @@ CraftLog/
 
 ### 🎯 Your Craft API
 
-The app is already configured for:
+The app is configured in `Configuration.swift`:
+```swift
+static let defaultCraftAPIURL = "https://connect.craft.do/links/4LRilONEs5e/api/v1"
 ```
-https://connect.craft.do/links/4LRilONEs5e/api/v1
-```
+
+**Other customizable settings:**
+- `maxLogLength` - Max characters (default: 10,000)
+- `widgetRefreshInterval` - Update frequency (default: 15 min)
+- `syncTimerInterval` - Background sync (default: 60 sec)
+- `defaultTimezone` - Timestamp zone (default: "Asia/Singapore")
 
 Logs append to **today's daily note** as markdown bullets with timestamps.
 
