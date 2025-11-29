@@ -34,25 +34,26 @@ MANIFEST.md       - File inventory & tests
 INDEX.md          - This file
 ```
 
-### Source Code (10 files)
+### Source Code (11 files)
 
-#### Main App (3 files)
+#### Main App (4 files)
 ```
-CraftLogApp.swift    - App entry point, URL handling
-ContentView.swift    - Main UI, input field, logs display
-Info.plist          - App configuration, URL schemes
+CraftLogApp.swift     - App entry point, URL handling
+ContentView.swift     - Main UI, input field, logs display
+Configuration.swift   - Centralized configuration constants
+Info.plist           - App configuration, URL schemes
 ```
 
 #### Models (1 file)
 ```
-Models/LogEntry.swift  - Log data structure & formatting
+Models/LogEntry.swift  - Log data structure & LogError enum
 ```
 
 #### Core Logic (3 files)
 ```
-Core/CraftAPI.swift     - Network client (protocol-based!)
-Core/LogQueue.swift     - Offline storage & queue
-Core/LogManager.swift   - Business logic coordinator
+Core/CraftAPI.swift     - Network client (protocol-based, no force unwraps!)
+Core/LogQueue.swift     - Thread-safe offline queue (actor)
+Core/LogManager.swift   - Business logic coordinator (@MainActor)
 ```
 
 #### Widgets (3 files)
@@ -81,10 +82,19 @@ Widgets/MediumWidget.swift     - Recent logs widget
 → [MANIFEST.md](MANIFEST.md) - Testing section
 
 **...modify the Craft API**
-→ `Core/CraftAPI.swift` - Line 6 (baseURL)
+→ `Configuration.swift` - Line 9 (defaultCraftAPIURL)
 
 **...change timestamp format**
-→ `Models/LogEntry.swift` - Line 14 (dateFormat)
+→ `Models/LogEntry.swift` - Line 20 (dateFormat)
+
+**...change max log length**
+→ `Configuration.swift` - Line 15 (maxLogLength)
+
+**...change widget refresh rate**
+→ `Configuration.swift` - Line 18 (widgetRefreshInterval)
+
+**...change offline sync interval**
+→ `Configuration.swift` - Line 21 (syncTimerInterval)
 
 **...add a new log destination**
 → `Core/CraftAPI.swift` - See protocol design
@@ -92,20 +102,17 @@ Widgets/MediumWidget.swift     - Recent logs widget
 **...customize widget appearance**
 → `Widgets/SmallWidget.swift` or `MediumWidget.swift`
 
-**...change offline sync interval**
-→ `Core/LogManager.swift` - Line 52 (timer interval)
-
 ---
 
 ## 📊 Code Statistics
 
 | Metric | Count |
 |--------|-------|
-| Total Files | 16 |
-| Swift Files | 10 |
-| Lines of Code | ~410 |
+| Total Files | 17 |
+| Swift Files | 11 |
+| Lines of Code | ~712 |
 | Documentation | 6 files |
-| Archive Size | 19 KB |
+| Archive Size | ~20 KB |
 
 ---
 

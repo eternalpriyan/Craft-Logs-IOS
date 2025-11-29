@@ -418,6 +418,52 @@ CraftLogApp
 - 🔄 Add API key validation
 - 🔄 Environment-based configs (dev/prod)
 
+## 🗂️ File Structure
+
+```
+CraftLog/
+├── CraftLogApp.swift           # Main app entry point
+├── ContentView.swift            # Main UI with input field
+├── Configuration.swift          # Centralized configuration constants
+├── Info.plist                   # App configuration
+├── Package.swift                # Swift Package Manager manifest
+├── Models/
+│   └── LogEntry.swift          # Log entry model & LogError enum
+├── Core/
+│   ├── CraftAPI.swift          # Craft API client (protocol-based)
+│   ├── LogQueue.swift          # Thread-safe offline queue (actor)
+│   └── LogManager.swift        # Coordinating logic (@MainActor)
+└── Widgets/
+    ├── CraftLogWidgets.swift   # Widget bundle & provider
+    ├── SmallWidget.swift       # Quick log button widget
+    └── MediumWidget.swift      # Recent logs widget
+```
+
+## 🔒 Thread Safety & Concurrency
+
+### Actor-Based Queue
+```swift
+// LogQueue uses Swift's actor for automatic thread-safety
+actor LogQueue {
+    func enqueue(_ entry: LogEntry) { ... }
+    func dequeue() -> LogEntry? { ... }
+}
+```
+
+**Benefits:**
+- ✅ Prevents race conditions on concurrent access
+- ✅ Automatic synchronization via Swift concurrency
+- ✅ No manual locks needed
+- ✅ Compiler-enforced safety
+
+### MainActor for UI Updates
+```swift
+@MainActor
+class LogManager: ObservableObject {
+    // All UI updates automatically on main thread
+}
+```
+
 ## 📊 Performance Characteristics
 
 | Operation | Time | Notes |
@@ -428,6 +474,23 @@ CraftLogApp
 | Widget Update | <50ms | Read from cache |
 | Queue Sync | 1-5s | Depends on queue size |
 | Recent Logs Load | <10ms | Small JSON decode |
+
+## 🛡️ Error Handling & Resilience
+
+### No Force Unwraps
+All potentially failing operations use proper error handling:
+- ✅ UserDefaults initialization with guard statements
+- ✅ URL construction with throwing errors
+- ✅ JSON encoding/decoding with logged errors
+- ✅ Configuration validation at initialization
+
+### Comprehensive Error Logging
+All errors are logged with descriptive messages:
+```swift
+catch {
+    print("⚠️ Failed to decode recent logs: \(error.localizedDescription)")
+}
+```
 
 ## 🚦 Error Handling Strategy
 

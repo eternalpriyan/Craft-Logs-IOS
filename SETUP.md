@@ -21,11 +21,16 @@ Since I can't create the actual `.xcodeproj` file directly, follow these steps t
 
 1. Delete the default `ContentView.swift` and `CraftLogApp.swift` from Xcode
 2. Drag all the files from this directory into Xcode, maintaining folder structure:
-   - `CraftLogApp.swift`
-   - `ContentView.swift`
-   - `Info.plist`
-   - `Models/` folder with `LogEntry.swift`
-   - `Core/` folder with all Core files
+   - `CraftLogApp.swift` (root)
+   - `ContentView.swift` (root)
+   - `Configuration.swift` (root)
+   - `Info.plist` (root)
+   - `Models/` folder with:
+     - `LogEntry.swift`
+   - `Core/` folder with:
+     - `CraftAPI.swift`
+     - `LogQueue.swift`
+     - `LogManager.swift`
    - `Widgets/` folder (we'll configure this as an extension)
 
 3. Select "Create groups" and ensure "CraftLog" target is checked
@@ -60,16 +65,21 @@ Since I can't create the actual `.xcodeproj` file directly, follow these steps t
 
 ## Step 5: Link Shared Code
 
-The widget needs access to shared models and managers:
+The widget needs access to shared models, configuration, and queue:
 
-1. Select `LogEntry.swift` in Project Navigator
+1. Select `Configuration.swift` in Project Navigator
 2. In File Inspector (right panel), check **both** targets:
    - ✅ CraftLog
    - ✅ CraftLogWidgets
 
-3. Repeat for:
-   - `LogQueue.swift`
-   - `CraftAPI.swift` (if widgets need it in future)
+3. Select `Models/LogEntry.swift` and check **both** targets:
+   - ✅ CraftLog
+   - ✅ CraftLogWidgets
+
+4. Repeat for:
+   - `Core/LogQueue.swift` (both targets - widgets read pending count)
+   - `Core/CraftAPI.swift` (optional - only if widgets need it in future)
+   - `Core/LogManager.swift` (main app only)
 
 ## Step 6: Configure Info.plist
 
@@ -157,19 +167,23 @@ CraftLog/
 ├── CraftLog/                     (Main App Target)
 │   ├── CraftLogApp.swift
 │   ├── ContentView.swift
+│   ├── Configuration.swift      (✓ Both targets)
 │   ├── Info.plist
+│   ├── Package.swift
 │   ├── Models/
 │   │   └── LogEntry.swift       (✓ Both targets)
 │   └── Core/
-│       ├── CraftAPI.swift
+│       ├── CraftAPI.swift       (Main target only)
 │       ├── LogQueue.swift       (✓ Both targets)
-│       └── LogManager.swift
+│       └── LogManager.swift     (Main target only)
 └── CraftLogWidgets/              (Widget Extension Target)
     ├── CraftLogWidgets.swift
     ├── SmallWidget.swift
     ├── MediumWidget.swift
     └── Info.plist
 ```
+
+**Note:** Files marked with "(✓ Both targets)" must have both CraftLog and CraftLogWidgets checked in File Inspector.
 
 ## Next Steps
 

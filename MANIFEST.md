@@ -2,9 +2,9 @@
 
 ## Phase 1 Delivery - Complete ✅
 
-**Total Files:** 13
-**Archive:** CraftLog-Phase1.tar.gz (11KB)
-**Date:** November 28, 2025
+**Total Files:** 14
+**Archive:** CraftLog-Phase1.tar.gz (~12KB)
+**Date:** November 29, 2025
 
 ---
 
@@ -53,9 +53,19 @@
 **ContentView.swift** (main UI)
 - Input field with keyboard focus
 - Recent logs display (5 most recent)
-- Toast notifications
+- Toast notifications (using async/await)
 - Submit/log button
+- Input validation (length & whitespace)
 - Voice button placeholder (Phase 3)
+
+**Configuration.swift** (centralized config)
+- App Group identifier
+- API URL endpoint
+- Timezone settings
+- Widget refresh interval
+- Sync timer interval
+- Max log length limit
+- UserDefaults keys
 
 ---
 
@@ -77,20 +87,25 @@
 - `CraftDailyNotesAPI` implementation
 - POST to `/blocks` endpoint
 - Query parameter encoding
-- Error handling
+- Comprehensive error handling (no force unwraps!)
+- Uses Configuration for API URL
 
 **LogQueue.swift** (offline queue)
+- **Thread-safe actor implementation**
 - UserDefaults persistence
 - FIFO queue operations
 - App Group shared storage
 - Queue count/status
+- Error logging for encode/decode
 
 **LogManager.swift** (business logic)
+- **@MainActor for UI thread safety**
 - Coordinates API + queue
-- Recent logs cache (20 max)
-- Background sync timer (60s)
+- Recent logs cache (configurable max)
+- Background sync timer (configurable interval)
 - ObservableObject for UI binding
 - Pending count tracking
+- Async/await throughout
 
 ---
 
@@ -131,6 +146,24 @@ Allows easy addition of:
 - Different Craft collections
 - Custom backends
 
+### Thread Safety & Concurrency
+- **LogQueue is an `actor`** - automatic synchronization
+- **LogManager is `@MainActor`** - UI updates on main thread
+- All async operations use modern Swift Concurrency
+- No manual locks or synchronization needed
+
+### Error Handling & Resilience
+- **Zero force unwraps** - all failures handled gracefully
+- Comprehensive error logging with descriptive messages
+- Input validation for length and content
+- Graceful degradation in widgets
+
+### Centralized Configuration
+- `Configuration.swift` contains all constants
+- Easy customization of API URLs, timeouts, limits
+- Type-safe enums for keys
+- Single source of truth
+
 ### Shared Storage Strategy
 - App Group: `group.com.priyan.craftlog`
 - Recent logs: UserDefaults (JSON encoded)
@@ -141,14 +174,15 @@ Allows easy addition of:
 ### Offline-First Design
 1. Try immediate sync
 2. If fails → queue locally
-3. Background timer syncs every 60s
+3. Background timer syncs (configurable interval)
 4. Visual feedback at every step
 
-### Singapore Timezone Hardcoded
-```swift
-formatter.timeZone = TimeZone(identifier: "Asia/Singapore")
-```
-Phase 2 will add settings screen.
+### Configurable Settings
+All settings in `Configuration.swift`:
+- Timezone (default: "Asia/Singapore")
+- Max log length (default: 10,000 chars)
+- Widget refresh (default: 15 min)
+- Sync interval (default: 60 sec)
 
 ---
 
@@ -156,17 +190,18 @@ Phase 2 will add settings screen.
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| ContentView.swift | 120 | Main UI & interaction |
-| LogManager.swift | 90 | Business logic |
-| CraftAPI.swift | 50 | Network layer |
-| SmallWidget.swift | 40 | Widget UI |
-| MediumWidget.swift | 80 | Widget UI |
-| CraftLogWidgets.swift | 60 | Widget provider |
-| LogQueue.swift | 50 | Offline storage |
-| LogEntry.swift | 35 | Data model |
-| CraftLogApp.swift | 20 | App setup |
+| ContentView.swift | 174 | Main UI & interaction (improved validation) |
+| LogManager.swift | 116 | Business logic (@MainActor, async) |
+| CraftAPI.swift | 57 | Network layer (no force unwraps) |
+| CraftLogWidgets.swift | 89 | Widget provider (safe unwraps) |
+| MediumWidget.swift | 87 | Widget UI |
+| LogQueue.swift | 59 | Thread-safe offline storage (actor) |
+| SmallWidget.swift | 43 | Widget UI |
+| LogEntry.swift | 34 | Data model & error enum |
+| Configuration.swift | 32 | Centralized configuration |
+| CraftLogApp.swift | 21 | App setup |
 
-**Total:** ~545 lines of Swift code
+**Total:** ~712 lines of Swift code (+167 from best practices improvements)
 
 ---
 
